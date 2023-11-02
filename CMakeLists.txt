@@ -21,5 +21,10 @@ target_include_directories(systemd INTERFACE ${SYSTEMD_INCLUDE_DIRS})
 add_executable(jess src/main.cpp
         src/NcWindow.hpp
         src/NcError.hpp
-        src/NcTerminal.hpp)
+        src/NcTerminal.hpp
+        src/SdJournal.hpp
+        src/Modeline.hpp
+        src/KeyCombination.hpp
+        src/JessMain.hpp
+        src/MainFrame.hpp)
 target_link_libraries(jess ncurses systemd)

@@ -59,6 +59,15 @@ public:
     ret.resize(uActualLength);
     return ret;
   }
+  void setNodelay(bool bNodelay) {
+    ::nodelay(handle.get(), bNodelay);
+  }
+  void enableAttributes(int attributes) {
+    NC_CHECK_RC(::wattron(handle.get(), attributes));
+  }
+  void disableAttributes(int attributes) {
+    NC_CHECK_RC(::wattroff(handle.get(), attributes));
+  }
 };
 
 } // namespace jess
