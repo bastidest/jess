@@ -22,7 +22,7 @@ public:
     m_mainWindow.move(0, 0);
     for (size_t i = 0; i < windowHeight && it != end; ++i, ++it) {
       m_mainWindow.move(i, 0);
-      m_mainWindow.printw("%s", it->c_str());
+      m_mainWindow.printw("%s", it->message().c_str());
       m_mainWindow.clearToEol();
     }
 

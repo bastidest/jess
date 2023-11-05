@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.27)
 project(jess)
 
+include(CTest)
+
 set(CMAKE_CXX_STANDARD 20)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
+add_compile_options(-Wall -Wextra -pedantic)
 
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses REQUIRED)
@@ -26,5 +30,14 @@ add_executable(jess src/main.cpp
         src/Modeline.hpp
         src/KeyCombination.hpp
         src/JessMain.hpp
-        src/MainFrame.hpp)
+        src/MainFrame.hpp
+        src/SdLine.hpp
+        src/SdCursor.hpp)
 target_link_libraries(jess ncurses systemd)
+
+if(BUILD_TESTING)
+    find_package(doctest REQUIRED)
+    add_executable(tests src/SdCursor.hpp test/SdCursor_test.cpp)
+    target_include_directories(tests PUBLIC src)
+    target_link_libraries(tests PRIVATE doctest::doctest)
+endif ()
