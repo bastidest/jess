@@ -49,7 +49,7 @@ public:
     sd_journal_get_data(handle.get(), sFieldName.data(), reinterpret_cast<const void **>(&ptr), &uMessageLength);
     std::string_view ret{static_cast<const char *>(ptr), uMessageLength};
 
-    if(ret.size() >= sFieldName.size() + 1) {
+    if (ret.size() >= sFieldName.size() + 1) {
       return ret.substr(sFieldName.size() + 1);
     }
 
@@ -59,6 +59,12 @@ public:
 #pragma clang diagnostic pop
   }
 
-  SdLine getLine() { return SdLine{std::string{getFieldString("MESSAGE")}, std::string{getFieldString("MESSAGE_ID")}}; }
+  std::chrono::time_point<std::chrono::system_clock> getTimestampRealtime() {
+    uint64_t ret;
+    sd_journal_get_realtime_usec(handle.get(), &ret);
+    return std::chrono::time_point<std::chrono::system_clock>{std::chrono::microseconds{ret}};
+  }
+
+  SdLine getLine() { return SdLine{std::string{getFieldString("MESSAGE")}, getTimestampRealtime()}; }
 };
 } // namespace jess

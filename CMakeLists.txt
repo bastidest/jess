@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-add_compile_options(-Wall -Wextra -pedantic)
+add_compile_options(-Wall -Wextra -pedantic -Wno-unknown-pragmas)
 
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses REQUIRED)
@@ -36,7 +36,7 @@ add_executable(jess src/main.cpp
         src/ChunkedJournal.hpp)
 target_link_libraries(jess ncurses systemd)
 
-if(BUILD_TESTING)
+if (BUILD_TESTING)
     find_package(doctest REQUIRED)
     include(doctest)  # for doctest_discover_tests
     add_executable(tests src/SdCursor.hpp test/SdCursor_test.cpp)
