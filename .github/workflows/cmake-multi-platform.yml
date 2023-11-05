@@ -39,7 +39,7 @@ jobs:
 
     - name: Install Dependencies
       run: >
-        sudo apt install -y libsystemd-dev
+        sudo apt install -y libsystemd-dev doctest
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
