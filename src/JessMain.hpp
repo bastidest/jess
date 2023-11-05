@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ChunkedJournal.hpp"
 #include "MainFrame.hpp"
 #include "Modeline.hpp"
 #include "NcTerminal.hpp"
@@ -17,28 +18,43 @@ class JessMain {
   jess::Modeline m_modeline{m_rootWindow};
   jess::MainFrame m_mainFrame{m_rootWindow};
   std::string m_currentCursor{};
-  bool m_bModelineActive = false;
-  std::vector<SdLine> m_currentLines{};
-  jess::SdJournal m_journal{};
+  bool m_bModelineActive{};
+  std::span<SdLine> m_currentLines{};
+  jess::ChunkedJournal m_journal{};
 
 public:
   KeyCombination getNextKey() { return m_modeline.getKeyCombination().value(); }
+
+  void scrollToBof() {
+    m_journal.seekToBof();
+    redrawTranslation();
+  }
+
+  void scrollToEof() {
+    //    m_journal.seekToEof();
+    redrawTranslation();
+  }
+
   void scrollUpLine() {
-    m_journal.seekBack(1);
+    m_journal.seekLines(-1);
     redrawTranslation();
   }
+
   void scrollDownLine() {
-    m_journal.seekForward(1);
+    m_journal.seekLines(1);
     redrawTranslation();
   }
+
   void scrollUpPage() {
-    m_journal.seekBack(m_mainFrame.height());
+    m_journal.seekLines(-static_cast<int64_t>(m_mainFrame.height()));
     redrawTranslation();
   }
+
   void scrollDownPage() {
-    m_journal.seekForward(m_mainFrame.height());
+    m_journal.seekLines(static_cast<int64_t>(m_mainFrame.height()));
     redrawTranslation();
   }
+
   void activateModeline() {
     m_bModelineActive = true;
     m_modeline.setActive();
@@ -51,9 +67,7 @@ private:
     m_modeline.focus();
   }
   void redrawTranslation() {
-    m_currentCursor = m_journal.getCursor();
     m_currentLines = m_journal.getLines(m_mainFrame.height());
-    m_journal.seekToCursor(m_currentCursor);
     redraw();
     displayOffset();
   }

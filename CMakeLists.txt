@@ -32,7 +32,8 @@ add_executable(jess src/main.cpp
         src/JessMain.hpp
         src/MainFrame.hpp
         src/SdLine.hpp
-        src/SdCursor.hpp)
+        src/SdCursor.hpp
+        src/ChunkedJournal.hpp)
 target_link_libraries(jess ncurses systemd)
 
 if(BUILD_TESTING)

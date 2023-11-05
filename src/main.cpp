@@ -39,6 +39,16 @@ void run() {
       continue;
     }
 
+    if (kc == key('g')) {
+      main.scrollToBof();
+      continue;
+    }
+
+    if (kc == key('G')) {
+      main.scrollToEof();
+      continue;
+    }
+
     if (kc == key(':')) {
       main.activateModeline();
       continue;

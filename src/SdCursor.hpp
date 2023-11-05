@@ -62,9 +62,13 @@ struct SdCursor {
     return ss.str();
   }
 
-  std::strong_ordering operator<=>(const SdCursor& that) const
-  {
-    return seqnum <=> that.seqnum;
+  bool operator==(const SdCursor &other) const { return seqnumId == other.seqnumId && seqnum == other.seqnum; }
+
+  std::partial_ordering operator<=>(const SdCursor &other) const {
+    if (seqnumId != other.seqnumId) {
+      return std::partial_ordering::unordered;
+    }
+    return seqnum <=> other.seqnum;
   }
 
   static SdCursor fromString(std::string_view sCursor) {
