@@ -38,7 +38,9 @@ target_link_libraries(jess ncurses systemd)
 
 if(BUILD_TESTING)
     find_package(doctest REQUIRED)
+    include(doctest)  # for doctest_discover_tests
     add_executable(tests src/SdCursor.hpp test/SdCursor_test.cpp)
     target_include_directories(tests PUBLIC src)
     target_link_libraries(tests PRIVATE doctest::doctest)
+    doctest_discover_tests(tests)
 endif ()
