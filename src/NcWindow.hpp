@@ -38,14 +38,19 @@ public:
   [[nodiscard]] size_t cursorPosX() const { return getcurx(handle.get()); }
   void setKeypad(bool bEnable) { NC_CHECK_RC(::keypad(handle.get(), bEnable)); }
   void move(size_t uPosY, size_t uPosX) { NC_CHECK_RC(::wmove(handle.get(), uPosY, uPosX)); }
-  template <typename... Args> void printw(const char *formatStr, Args... args) {
-    NC_CHECK_RC(::wprintw(handle.get(), formatStr, std::forward<Args>(args)...));
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-security"
+  void printw(const char *formatStr, auto... args) {
+    NC_CHECK_RC(::wprintw(handle.get(), formatStr, std::forward<decltype(args)>(args)...));
   }
+#pragma clang diagnostic pop
+
   void clear() { NC_CHECK_RC(::wclear(handle.get())); }
   void clearToEol() {
-//    if(cursorPosX() + 10 >= width()) {
-//      return;
-//    }
+    //    if(cursorPosX() + 10 >= width()) {
+    //      return;
+    //    }
     ::wclrtoeol(handle.get());
   }
   void clearToBot() { NC_CHECK_RC(::wclrtobot(handle.get())); }
@@ -59,15 +64,9 @@ public:
     ret.resize(uActualLength);
     return ret;
   }
-  void setNodelay(bool bNodelay) {
-    ::nodelay(handle.get(), bNodelay);
-  }
-  void enableAttributes(int attributes) {
-    NC_CHECK_RC(::wattron(handle.get(), attributes));
-  }
-  void disableAttributes(int attributes) {
-    NC_CHECK_RC(::wattroff(handle.get(), attributes));
-  }
+  void setNodelay(bool bNodelay) { ::nodelay(handle.get(), bNodelay); }
+  void enableAttributes(int attributes) { NC_CHECK_RC(::wattron(handle.get(), attributes)); }
+  void disableAttributes(int attributes) { NC_CHECK_RC(::wattroff(handle.get(), attributes)); }
 };
 
 } // namespace jess
