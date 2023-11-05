@@ -43,14 +43,22 @@ public:
 
   bool next() { return sd_journal_next(handle.get()) > 0; }
 
-  SdLine getLine() {
+  std::string_view getFieldString(std::string_view sFieldName) {
     const void *ptr = nullptr;
     size_t uMessageLength{};
-    sd_journal_get_data(handle.get(), "MESSAGE", reinterpret_cast<const void **>(&ptr), &uMessageLength);
-    std::string sMessage{static_cast<const char *>(ptr)};
-    sd_journal_get_data(handle.get(), "MESSAGE_ID", reinterpret_cast<const void **>(&ptr), &uMessageLength);
-    std::string sRealtimeTimestamp{static_cast<const char *>(ptr)};
-    return SdLine{sMessage, sRealtimeTimestamp};
+    sd_journal_get_data(handle.get(), sFieldName.data(), reinterpret_cast<const void **>(&ptr), &uMessageLength);
+    std::string_view ret{static_cast<const char *>(ptr), uMessageLength};
+
+    if(ret.size() >= sFieldName.size() + 1) {
+      return ret.substr(sFieldName.size() + 1);
+    }
+
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "LocalValueEscapesScope"
+    return ret;
+#pragma clang diagnostic pop
   }
+
+  SdLine getLine() { return SdLine{std::string{getFieldString("MESSAGE")}, std::string{getFieldString("MESSAGE_ID")}}; }
 };
 } // namespace jess
