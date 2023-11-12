@@ -13,14 +13,14 @@
 namespace jess {
 
 class JessMain {
-  jess::NcTerminal m_rootTerminal{};
-  jess::NcWindow m_rootWindow = m_rootTerminal.rootWindow();
-  jess::Modeline m_modeline{m_rootWindow};
-  jess::MainFrame m_mainFrame{m_rootWindow};
+  NcTerminal m_rootTerminal{};
+  NcWindow m_rootWindow = m_rootTerminal.rootWindow();
+  Modeline m_modeline{ m_rootWindow };
+  MainFrame m_mainFrame{m_rootWindow};
   std::string m_currentCursor{};
   bool m_bModelineActive{};
   std::span<SdLine> m_currentLines{};
-  jess::ChunkedJournal m_journal{};
+  ChunkedJournal<SdJournal> m_journal{1024, 0};
 
 public:
   KeyCombination getNextKey() { return m_modeline.getKeyCombination().value(); }

@@ -14,6 +14,9 @@ void run() {
   using jess::meta;
   using key = jess::KeyCombination;
 
+  // for now, let's start at the top
+  main.scrollToBof();
+
   bool bContinue = true;
 
   while (bContinue) {

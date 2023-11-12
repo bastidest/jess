@@ -261,5 +261,3 @@ TEST_CASE( "ChunkedJournal(1) load EOF" )
     }
   }
 }
-
-// todo: check skipping a chunk
