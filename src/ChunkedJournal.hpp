@@ -57,14 +57,15 @@ private:
   {
     const auto firstId = chunk.lines.front().seqid();
     auto lastValidId = m_chunks.begin();
-    for(auto it = m_chunks.begin(); it != m_chunks.end(); ++it)
+    for ( auto it = m_chunks.begin(); it != m_chunks.end(); ++it )
     {
-      if (auto seq = it->highestIdsInChunk.find( firstId.seqnumId ); seq != it->highestIdsInChunk.end())
+      if ( auto seq = it->highestIdsInChunk.find( firstId.seqnumId ); seq != it->highestIdsInChunk.end() )
       {
-        if(firstId.seqnum > seq->second)
+        if ( firstId.seqnum > seq->second )
         {
           lastValidId = it;
-        } else
+        }
+        else
         {
           return lastValidId;
         }
@@ -186,7 +187,7 @@ public:
   void seekToEof()
   {
     m_journal.seekToEof();
-    m_journal.seekLinesBackward(m_uChunkSize);
+    m_journal.seekLinesBackward( m_uChunkSize );
     loadChunkAtCurrentPosition( Adjacency::NON_ADJACENT );
     // bug: this will explode if there are fewer than m_uChunkSize lines in the chunk
     m_uLineOffsetInChunk = m_uChunkSize - 1;
@@ -229,6 +230,15 @@ public:
     }
     const std::span ret{ m_pCurrentChunk->lines };
     return ret.subspan( m_uLineOffsetInChunk, std::min( ret.size() - m_uLineOffsetInChunk, uNumLines ) );
+  }
+
+  std::string getChunkPositionString()
+  {
+    const size_t uNthChunk = std::distance( m_chunks.begin(), m_pCurrentChunk );
+    const size_t uNumChunks = m_chunks.size();
+
+    return "chunk " + std::to_string( uNthChunk + 1 ) + "/" + std::to_string( uNumChunks ) + "; line " + std::to_string( m_uLineOffsetInChunk + 1 ) + "/" +
+      std::to_string( m_pCurrentChunk->lines.size() );
   }
 };
 

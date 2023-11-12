@@ -261,3 +261,6 @@ TEST_CASE( "ChunkedJournal(1) load EOF" )
     }
   }
 }
+
+// TODO: tests where chunk is smaller than entire stream
+// TODO: tests where journal EOF moves
