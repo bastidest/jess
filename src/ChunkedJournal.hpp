@@ -149,6 +149,14 @@ public:
     m_uLineOffsetInChunk = 0;
   }
 
+  void seekToEof()
+  {
+    m_journal.seekToEof();
+    m_journal.next();
+    loadChunkAtCurrentPosition( InsertPosition::AFTER, Contiguity::CONTIGUOUS );
+    m_uLineOffsetInChunk = m_uChunkSize - 1;
+  }
+
   void seekLines( const int64_t uNumLines )
   {
     assert( m_pCurrentChunk != m_chunks.end() );

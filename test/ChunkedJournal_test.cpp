@@ -43,6 +43,16 @@ struct MockStream {
   jess::SdLine getLine() { return currentLine.value(); }
 };
 
+void checkSequence( const jess::Chunk& chunk, const size_t uLength, const size_t uFirstIndex )
+{
+  REQUIRE( chunk.lines.size() == uLength );
+  for ( size_t i = 0; i < uLength; ++i )
+  {
+    CHECK( chunk.lines.at( i ).seqid().seqnum.value == i + uFirstIndex );
+    CHECK( chunk.lines.at( i ).message() == "line " + std::to_string( i + uFirstIndex ) );
+  }
+}
+
 TEST_CASE( "ChunkedJournal(1) constructor" )
 {
   jess::ChunkedJournal<MockStream<10>> sut{ 1, 10 };
@@ -58,9 +68,7 @@ TEST_CASE( "ChunkedJournal(1) load BOF" )
   REQUIRE( chunks.size() == 1 );
 
   const jess::Chunk& firstChunk = chunks.front();
-  REQUIRE( firstChunk.lines.size() == 1 );
-  CHECK( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-  CHECK( firstChunk.lines.at( 0 ).message() == "line 0" );
+  checkSequence( firstChunk, 1, 0 );
 
   SUBCASE( "seeking to BOF shall again shall not change anything" )
   {
@@ -76,14 +84,10 @@ TEST_CASE( "ChunkedJournal(1) load BOF" )
     REQUIRE( chunks2.size() == 2 );
     REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
 
-    REQUIRE( firstChunk.lines.size() == 1 );
-    REQUIRE( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-    REQUIRE( firstChunk.lines.at( 0 ).message() == "line 0" );
+    checkSequence( firstChunk, 1, 0 );
 
     const jess::Chunk& secondChunk = chunks2.back();
-    REQUIRE( secondChunk.lines.size() == 1 );
-    CHECK( secondChunk.lines.at( 0 ).seqid().seqnum.value == 1 );
-    CHECK( secondChunk.lines.at( 0 ).message() == "line 1" );
+    checkSequence( secondChunk, 1, 1 );
   }
 }
 
@@ -95,11 +99,7 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
   REQUIRE( chunks.size() == 1 );
 
   const jess::Chunk& firstChunk = chunks.front();
-  REQUIRE( firstChunk.lines.size() == 2 );
-  CHECK( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-  CHECK( firstChunk.lines.at( 0 ).message() == "line 0" );
-  CHECK( firstChunk.lines.at( 1 ).seqid().seqnum.value == 1 );
-  CHECK( firstChunk.lines.at( 1 ).message() == "line 1" );
+  checkSequence( firstChunk, 2, 0 );
 
   SUBCASE( "seeking to BOF shall again shall not change anything" )
   {
@@ -115,12 +115,7 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
       const std::list<jess::Chunk>& chunks2 = sut.getChunks();
       REQUIRE( chunks2.size() == 1 );
       REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
-
-      REQUIRE( firstChunk.lines.size() == 2 );
-      CHECK( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-      CHECK( firstChunk.lines.at( 0 ).message() == "line 0" );
-      CHECK( firstChunk.lines.at( 1 ).seqid().seqnum.value == 1 );
-      CHECK( firstChunk.lines.at( 1 ).message() == "line 1" );
+      checkSequence( chunks.front(), 2, 0 );
     }
 
     SUBCASE( "advance another line" )
@@ -130,18 +125,8 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
       REQUIRE( chunks2.size() == 2 );
       REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
 
-      REQUIRE( firstChunk.lines.size() == 2 );
-      CHECK( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-      CHECK( firstChunk.lines.at( 0 ).message() == "line 0" );
-      CHECK( firstChunk.lines.at( 1 ).seqid().seqnum.value == 1 );
-      CHECK( firstChunk.lines.at( 1 ).message() == "line 1" );
-
-      const auto& secondChunk = chunks2.back();
-      REQUIRE( secondChunk.lines.size() == 2 );
-      CHECK( secondChunk.lines.at( 0 ).seqid().seqnum.value == 2 );
-      CHECK( secondChunk.lines.at( 0 ).message() == "line 2" );
-      CHECK( secondChunk.lines.at( 1 ).seqid().seqnum.value == 3 );
-      CHECK( secondChunk.lines.at( 1 ).message() == "line 3" );
+      checkSequence( chunks.front(), 2, 0 );
+      checkSequence( chunks.back(), 2, 2 );
     }
   }
 
@@ -152,18 +137,8 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
     REQUIRE( chunks2.size() == 2 );
     REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
 
-    REQUIRE( firstChunk.lines.size() == 2 );
-    CHECK( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-    CHECK( firstChunk.lines.at( 0 ).message() == "line 0" );
-    CHECK( firstChunk.lines.at( 1 ).seqid().seqnum.value == 1 );
-    CHECK( firstChunk.lines.at( 1 ).message() == "line 1" );
-
-    const auto& secondChunk = chunks2.back();
-    REQUIRE( secondChunk.lines.size() == 2 );
-    CHECK( secondChunk.lines.at( 0 ).seqid().seqnum.value == 2 );
-    CHECK( secondChunk.lines.at( 0 ).message() == "line 2" );
-    CHECK( secondChunk.lines.at( 1 ).seqid().seqnum.value == 3 );
-    CHECK( secondChunk.lines.at( 1 ).message() == "line 3" );
+    checkSequence( chunks.front(), 2, 0 );
+    checkSequence( chunks.back(), 2, 2 );
   }
 }
 
@@ -174,12 +149,25 @@ TEST_CASE( "ChunkedJournal(3) load BOF" )
   const std::list<jess::Chunk>& chunks = sut.getChunks();
   REQUIRE( chunks.size() == 1 );
 
-  const jess::Chunk& firstChunk = chunks.front();
-  REQUIRE( firstChunk.lines.size() == 3 );
-  REQUIRE( firstChunk.lines.at( 0 ).seqid().seqnum.value == 0 );
-  REQUIRE( firstChunk.lines.at( 0 ).message() == "line 0" );
-  REQUIRE( firstChunk.lines.at( 1 ).seqid().seqnum.value == 1 );
-  REQUIRE( firstChunk.lines.at( 1 ).message() == "line 1" );
-  REQUIRE( firstChunk.lines.at( 2 ).seqid().seqnum.value == 2 );
-  REQUIRE( firstChunk.lines.at( 2 ).message() == "line 2" );
+  checkSequence( chunks.front(), 3, 0 );
+}
+
+TEST_CASE( "ChunkedJournal(1) load EOF" )
+{
+  jess::ChunkedJournal<MockStream<10>> sut{ 1, 0 };
+  sut.seekToEof();
+  const std::list<jess::Chunk>& chunks = sut.getChunks();
+  REQUIRE( chunks.size() == 1 );
+  checkSequence( chunks.front(), 1, 9 );
+
+  SUBCASE( "seek to BOF" )
+  {
+    sut.seekToBof();
+    REQUIRE( chunks.size() == 2 );
+    checkSequence( chunks.front(), 1, 0 );
+
+    SUBCASE( "load next line" )
+    {
+    }
+  }
 }
