@@ -35,14 +35,22 @@ add_executable(jess src/main.cpp
         src/MainFrame.hpp
         src/SdLine.hpp
         src/SdCursor.hpp
-        src/ChunkedJournal.hpp)
-target_link_libraries(jess ncurses systemd)
+        src/ChunkedJournal.hpp
+        src/CSeekableStream.hpp
+        src/SdCursor.cpp
+        src/SdSeqid.hpp)
+target_link_libraries(jess PUBLIC ncurses systemd)
 
 if (BUILD_TESTING)
     find_package(doctest REQUIRED)
     include(doctest)  # for doctest_discover_tests
-    add_executable(tests src/SdCursor.hpp test/SdCursor_test.cpp)
+    add_executable(tests
+            src/SdCursor.hpp
+            src/SdCursor.cpp
+            test/SdCursor_test.cpp
+            test/ChunkedJournal_test.cpp
+            test/main.cpp)
     target_include_directories(tests PUBLIC src)
-    target_link_libraries(tests PRIVATE doctest::doctest)
+    target_link_libraries(tests PUBLIC ncurses systemd PRIVATE doctest::doctest)
     doctest_discover_tests(tests)
 endif ()

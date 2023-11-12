@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SdSeqid.hpp"
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -14,8 +15,8 @@ namespace jess {
 
 template <bool bUppercase> constexpr uint8_t hexCharToNibble(char c) {
   constexpr char startOfAlphabet = bUppercase ? 'A' : 'a';
-  bool bIsLetter = static_cast<bool>(c & (0b1 << 6));
-  uint8_t uRelativeOffset = c - '0';
+  const bool bIsLetter = static_cast<bool>( c & ( 0b1 << 6 ) );
+  const uint8_t uRelativeOffset = c - '0';
   return uRelativeOffset - bIsLetter * (startOfAlphabet - '0' - 10);
 }
 
@@ -29,32 +30,16 @@ constexpr std::array<uint8_t, uSize> hexStringToByteArray(std::string_view sHexS
   return ret;
 }
 
-std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, 16> &data) {
-  for (uint8_t num : data) {
-    os << std::setfill('0') << std::setw(2) << static_cast<uint32_t>(num);
-  }
-  os << std::setw(0);
-  return os;
-}
+struct SdCursor;
+std::ostream &operator<<(std::ostream &os, const std::array<uint8_t, 16> &data);
+std::ostream &operator<<(std::ostream &os, const SdCursor &that);
 
 struct SdCursor {
-  std::array<uint8_t, 16> seqnumId;
-  size_t seqnum;
+  SdSeqid seqid;
   std::array<uint8_t, 16> bootId;
   size_t timeMonotonic;
   size_t timeRealtime;
   size_t someXor;
-
-  friend std::ostream &operator<<(std::ostream &os, const SdCursor &that) {
-    os << std::hex;
-    os << "s=" << that.seqnumId << ";";
-    os << "i=" << that.seqnum << ";";
-    os << "b=" << that.bootId << ";";
-    os << "m=" << that.timeMonotonic << ";";
-    os << "t=" << that.timeRealtime << ";";
-    os << "x=" << that.someXor;
-    return os;
-  }
 
   [[nodiscard]] std::string toString() const {
     std::stringstream ss{};
@@ -62,21 +47,18 @@ struct SdCursor {
     return ss.str();
   }
 
-  bool operator==(const SdCursor &other) const { return seqnumId == other.seqnumId && seqnum == other.seqnum; }
+  bool operator==(const SdCursor &other) const { return seqid == other.seqid; }
 
-  std::partial_ordering operator<=>(const SdCursor &other) const {
-    if (seqnumId != other.seqnumId) {
-      return std::partial_ordering::unordered;
-    }
-    return seqnum <=> other.seqnum;
-  }
+  std::partial_ordering operator<=>(const SdCursor &other) const { return seqid <=> other.seqid; }
 
   static SdCursor fromString(std::string_view sCursor) {
     using namespace std::string_view_literals;
     SdCursor ret{};
 
-    ret.seqnumId = parse<std::array<uint8_t, 16>>(sCursor, "s=");
-    ret.seqnum = parse<std::size_t>(sCursor, "i=");
+    ret.seqid = {
+        {parse<std::array<uint8_t, 16>>(sCursor, "s=")},
+        {parse<std::size_t>(sCursor, "i=")},
+    };
     ret.bootId = parse<std::array<uint8_t, 16>>(sCursor, "b=");
     ret.timeMonotonic = parse<std::size_t>(sCursor, "m=");
     ret.timeRealtime = parse<std::size_t>(sCursor, "t=");
