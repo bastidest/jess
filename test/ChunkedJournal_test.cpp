@@ -5,14 +5,18 @@ using namespace std::string_view_literals;
 
 template<size_t uStreamLength>
 struct MockStream {
-  size_t pos{};
+  int64_t pos{};
   std::optional<jess::SdLine> currentLine{};
 
-  void seekToBof() { pos = 0; }
+  void seekToBof() { pos = -1; }
 
-  void seekToEof() { pos = uStreamLength - 1; }
+  void seekToEof() { pos = uStreamLength; }
 
-  void seekLinesForward( const size_t uNumLines ) { pos = std::min( pos + uNumLines, uStreamLength - 1 ); }
+  void seekLinesForward( const size_t uNumLines )
+  {
+    pos = std::min( pos + uNumLines, uStreamLength - 1 );
+    loadCurrentLine();
+  }
 
   void seekLinesBackward( const size_t uNumLines )
   {
@@ -24,23 +28,48 @@ struct MockStream {
     {
       pos = pos - uNumLines;
     }
+    loadCurrentLine();
   }
 
-  /// read the data the the current position and advance the position
   bool next()
   {
-    currentLine = jess::SdLine{
-      { { std::array<uint8_t, 16>{} }, { pos } },
-      std::string{ "line " } + std::to_string( pos ),
-      std::chrono::system_clock::time_point{ std::chrono::seconds{ pos } },
-    };
     pos += 1;
-    return pos <= uStreamLength;
+    assert( pos >= 0 );
+
+    if ( pos < uStreamLength )
+    {
+      loadCurrentLine();
+    }
+
+    return pos < uStreamLength;
+  }
+
+  bool previous()
+  {
+    pos -= 1;
+    assert( pos < uStreamLength );
+
+    if ( pos >= 0 )
+    {
+      loadCurrentLine();
+    }
+
+    return pos >= 0;
   }
 
   [[nodiscard]] jess::SdSeqid getSeqid() const { return currentLine->seqid(); }
 
   jess::SdLine getLine() { return currentLine.value(); }
+
+private:
+  void loadCurrentLine()
+  {
+    currentLine = jess::SdLine{
+      { { std::array<uint8_t, 16>{} }, { static_cast<size_t>( pos ) } },
+      std::string{ "line " } + std::to_string( pos ),
+      std::chrono::system_clock::time_point{ std::chrono::seconds{ pos } },
+    };
+  }
 };
 
 void checkSequence( const jess::Chunk& chunk, const size_t uLength, const size_t uFirstIndex )
@@ -93,6 +122,23 @@ TEST_CASE( "ChunkedJournal(1) load BOF" )
     const jess::Chunk& secondChunk = chunks2.back();
     checkSequence( secondChunk, 1, 1 );
     CHECK( secondChunk.contiguityBeginning == jess::Contiguity::CONTIGUOUS );
+    CHECK( secondChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
+  }
+
+  SUBCASE( "advance two lines" )
+  {
+    sut.seekLines( 2 );
+    const std::list<jess::Chunk>& chunks2 = sut.getChunks();
+    REQUIRE( chunks2.size() == 2 );
+    REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
+
+    checkSequence( firstChunk, 1, 0 );
+    CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+    CHECK( firstChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
+
+    const jess::Chunk& secondChunk = chunks2.back();
+    checkSequence( secondChunk, 1, 2 );
+    CHECK( secondChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
     CHECK( secondChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
   }
 }

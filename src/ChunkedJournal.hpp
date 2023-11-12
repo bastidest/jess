@@ -53,6 +53,26 @@ public:
   const auto& getChunks() const { return m_chunks; }
 
 private:
+  decltype( m_pCurrentChunk ) findChunkInsertionPosition( const Chunk& chunk )
+  {
+    const auto firstId = chunk.lines.front().seqid();
+    auto lastValidId = m_chunks.begin();
+    for(auto it = m_chunks.begin(); it != m_chunks.end(); ++it)
+    {
+      if (auto seq = it->highestIdsInChunk.find( firstId.seqnumId ); seq != it->highestIdsInChunk.end())
+      {
+        if(firstId.seqnum > seq->second)
+        {
+          lastValidId = it;
+        } else
+        {
+          return lastValidId;
+        }
+      }
+    }
+    return m_chunks.end();
+  }
+
   auto createChunkAtCurrentPosition( const Adjacency adjacency ) -> decltype( m_chunks.begin() )
   {
     Chunk newChunk{ {}, {}, {} };
@@ -84,11 +104,28 @@ private:
       }
     }
 
-    auto insertIt = m_pCurrentChunk;
-    if ( adjacency == Adjacency::AFTER_CURRENT )
+    decltype( m_pCurrentChunk ) insertIt;
+
+    switch ( adjacency )
     {
-      std::advance( insertIt, 1 );
+      case Adjacency::NON_ADJACENT: {
+        insertIt = findChunkInsertionPosition( newChunk );
+        break;
+      }
+      case Adjacency::BEFORE_CURRENT: {
+        insertIt = m_pCurrentChunk;
+        break;
+      }
+      case Adjacency::AFTER_CURRENT: {
+        insertIt = m_pCurrentChunk;
+        std::advance( insertIt, 1 );
+        break;
+      }
+      default: {
+        throw std::logic_error{ "unexpected adjacency state" };
+      }
     }
+
     auto newChunkIt = m_chunks.insert( insertIt, std::move( newChunk ) );
 
     if ( adjacency == Adjacency::BEFORE_CURRENT )
@@ -149,7 +186,7 @@ public:
   void seekToEof()
   {
     m_journal.seekToEof();
-    m_journal.next();
+    m_journal.previous();
     loadChunkAtCurrentPosition( Adjacency::NON_ADJACENT );
     m_uLineOffsetInChunk = m_uChunkSize - 1;
   }
@@ -173,7 +210,6 @@ public:
       if ( const size_t uLinesToSeek = uNumChunksToSkip * m_uChunkSize; uLinesToSeek > 0 )
       {
         m_journal.seekLinesForward( uLinesToSeek );
-        m_journal.next();
       }
 
       const Adjacency adjacency = uNumChunksToSkip == 0 ? Adjacency::AFTER_CURRENT : Adjacency::NON_ADJACENT;

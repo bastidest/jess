@@ -26,6 +26,9 @@ concept SeekableStream = requires( T a ) {
     a.next()
   } -> std::same_as<bool>;
   {
+    a.previous()
+  } -> std::same_as<bool>;
+  {
     a.getLine()
   } -> std::same_as<SdLine>;
   {

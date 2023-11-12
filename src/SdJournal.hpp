@@ -48,6 +48,8 @@ public:
 
   bool next() { return sd_journal_next( handle.get() ) > 0; }
 
+  bool previous() { return sd_journal_previous( handle.get() ) > 0; }
+
   std::string_view getFieldString( std::string_view sFieldName )
   {
     const void* ptr = nullptr;
