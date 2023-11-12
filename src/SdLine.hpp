@@ -5,6 +5,7 @@
 #include <chrono>
 #include <string>
 #include <utility>
+#include <iosfwd>
 
 
 namespace jess
