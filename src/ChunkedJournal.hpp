@@ -186,8 +186,9 @@ public:
   void seekToEof()
   {
     m_journal.seekToEof();
-    m_journal.previous();
+    m_journal.seekLinesBackward(m_uChunkSize);
     loadChunkAtCurrentPosition( Adjacency::NON_ADJACENT );
+    // bug: this will explode if there are fewer than m_uChunkSize lines in the chunk
     m_uLineOffsetInChunk = m_uChunkSize - 1;
   }
 

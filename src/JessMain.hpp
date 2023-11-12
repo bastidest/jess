@@ -31,7 +31,7 @@ public:
   }
 
   void scrollToEof() {
-    //    m_journal.seekToEof();
+    m_journal.seekToEof();
     redrawTranslation();
   }
 
