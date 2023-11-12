@@ -13,15 +13,16 @@
 namespace jess
 {
 
+enum class Adjacency {
+  NON_ADJACENT,
+  AFTER_CURRENT,
+  BEFORE_CURRENT,
+};
+
 enum class Contiguity {
   CONTIGUOUS,
   NON_CONTIGUOUS,
   OVERLAPPING,
-};
-
-enum class InsertPosition {
-  BEFORE,
-  AFTER,
 };
 
 struct Chunk {
@@ -52,7 +53,7 @@ public:
   const auto& getChunks() const { return m_chunks; }
 
 private:
-  auto createChunkAtCurrentPosition( const InsertPosition insertPos, const Contiguity contiguity ) -> decltype( m_chunks.begin() )
+  auto createChunkAtCurrentPosition( const Adjacency adjacency ) -> decltype( m_chunks.begin() )
   {
     Chunk newChunk{ {}, {}, {} };
 
@@ -84,27 +85,23 @@ private:
     }
 
     auto insertIt = m_pCurrentChunk;
-    if ( insertPos == InsertPosition::AFTER )
+    if ( adjacency == Adjacency::AFTER_CURRENT )
     {
       std::advance( insertIt, 1 );
     }
     auto newChunkIt = m_chunks.insert( insertIt, std::move( newChunk ) );
 
-    if ( insertPos == InsertPosition::BEFORE )
+    if ( adjacency == Adjacency::BEFORE_CURRENT )
     {
-      newChunkIt->contiguityEnd = contiguity;
-      if ( m_pCurrentChunk != m_chunks.end() )
-      {
-        m_pCurrentChunk->contiguityBeginning = contiguity;
-      }
+      assert( m_pCurrentChunk != m_chunks.end() );
+      newChunkIt->contiguityEnd = Contiguity::CONTIGUOUS;
+      m_pCurrentChunk->contiguityBeginning = Contiguity::CONTIGUOUS;
     }
-    else if ( insertPos == InsertPosition::AFTER )
+    else if ( adjacency == Adjacency::AFTER_CURRENT )
     {
-      if ( m_pCurrentChunk != m_chunks.end() )
-      {
-        m_pCurrentChunk->contiguityEnd = contiguity;
-      }
-      newChunkIt->contiguityBeginning = contiguity;
+      assert( m_pCurrentChunk != m_chunks.end() );
+      m_pCurrentChunk->contiguityEnd = Contiguity::CONTIGUOUS;
+      newChunkIt->contiguityBeginning = Contiguity::CONTIGUOUS;
     }
 
     return newChunkIt;
@@ -127,7 +124,7 @@ private:
     return ret;
   }
 
-  void loadChunkAtCurrentPosition( const InsertPosition insertPos, const Contiguity contiguity )
+  void loadChunkAtCurrentPosition( const Adjacency adjacency )
   {
     const auto seqid = m_journal.getSeqid();
     if ( auto chunks = getChunksBySeqid( seqid ); !chunks.empty() )
@@ -136,7 +133,7 @@ private:
     }
     else
     {
-      m_pCurrentChunk = createChunkAtCurrentPosition( insertPos, contiguity );
+      m_pCurrentChunk = createChunkAtCurrentPosition( adjacency );
     }
   }
 
@@ -145,7 +142,7 @@ public:
   {
     m_journal.seekToBof();
     m_journal.next();
-    loadChunkAtCurrentPosition( InsertPosition::BEFORE, Contiguity::CONTIGUOUS );
+    loadChunkAtCurrentPosition( Adjacency::NON_ADJACENT );
     m_uLineOffsetInChunk = 0;
   }
 
@@ -153,7 +150,7 @@ public:
   {
     m_journal.seekToEof();
     m_journal.next();
-    loadChunkAtCurrentPosition( InsertPosition::AFTER, Contiguity::CONTIGUOUS );
+    loadChunkAtCurrentPosition( Adjacency::NON_ADJACENT );
     m_uLineOffsetInChunk = m_uChunkSize - 1;
   }
 
@@ -173,14 +170,14 @@ public:
       const size_t uNumChunksToSkip = uNewOffsetRelativeToEndOfCurrentChunk / m_uChunkSize;
       m_uLineOffsetInChunk = uNewOffsetRelativeToEndOfCurrentChunk - uNumChunksToSkip * m_uChunkSize;
 
-      if ( const size_t uLinesToSeek = uNumChunksToSkip * m_uChunkSize; uLinesToSeek > 0)
+      if ( const size_t uLinesToSeek = uNumChunksToSkip * m_uChunkSize; uLinesToSeek > 0 )
       {
         m_journal.seekLinesForward( uLinesToSeek );
         m_journal.next();
       }
 
-      const Contiguity contiguity = uNumChunksToSkip == 0 ? Contiguity::CONTIGUOUS : Contiguity::NON_CONTIGUOUS;
-      loadChunkAtCurrentPosition( InsertPosition::AFTER, contiguity );
+      const Adjacency adjacency = uNumChunksToSkip == 0 ? Adjacency::AFTER_CURRENT : Adjacency::NON_ADJACENT;
+      loadChunkAtCurrentPosition( adjacency );
       return;
     }
 

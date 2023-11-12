@@ -68,6 +68,8 @@ TEST_CASE( "ChunkedJournal(1) load BOF" )
   REQUIRE( chunks.size() == 1 );
 
   const jess::Chunk& firstChunk = chunks.front();
+  CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+  CHECK( firstChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
   checkSequence( firstChunk, 1, 0 );
 
   SUBCASE( "seeking to BOF shall again shall not change anything" )
@@ -85,9 +87,13 @@ TEST_CASE( "ChunkedJournal(1) load BOF" )
     REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
 
     checkSequence( firstChunk, 1, 0 );
+    CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+    CHECK( firstChunk.contiguityEnd == jess::Contiguity::CONTIGUOUS );
 
     const jess::Chunk& secondChunk = chunks2.back();
     checkSequence( secondChunk, 1, 1 );
+    CHECK( secondChunk.contiguityBeginning == jess::Contiguity::CONTIGUOUS );
+    CHECK( secondChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
   }
 }
 
@@ -100,6 +106,8 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
 
   const jess::Chunk& firstChunk = chunks.front();
   checkSequence( firstChunk, 2, 0 );
+  CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+  CHECK( firstChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
 
   SUBCASE( "seeking to BOF shall again shall not change anything" )
   {
@@ -116,6 +124,8 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
       REQUIRE( chunks2.size() == 1 );
       REQUIRE_MESSAGE( &chunks.front() == &firstChunk, "the first chunk shall remain at the first position" );
       checkSequence( chunks.front(), 2, 0 );
+      CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+      CHECK( firstChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
     }
 
     SUBCASE( "advance another line" )
@@ -127,6 +137,11 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
 
       checkSequence( chunks.front(), 2, 0 );
       checkSequence( chunks.back(), 2, 2 );
+
+      CHECK( chunks.front().contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+      CHECK( chunks.front().contiguityEnd == jess::Contiguity::CONTIGUOUS );
+      CHECK( chunks.back().contiguityBeginning == jess::Contiguity::CONTIGUOUS );
+      CHECK( chunks.back().contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
     }
   }
 
@@ -139,6 +154,11 @@ TEST_CASE( "ChunkedJournal(2) load BOF" )
 
     checkSequence( chunks.front(), 2, 0 );
     checkSequence( chunks.back(), 2, 2 );
+
+    CHECK( chunks.front().contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+    CHECK( chunks.front().contiguityEnd == jess::Contiguity::CONTIGUOUS );
+    CHECK( chunks.back().contiguityBeginning == jess::Contiguity::CONTIGUOUS );
+    CHECK( chunks.back().contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
   }
 }
 
@@ -150,6 +170,8 @@ TEST_CASE( "ChunkedJournal(3) load BOF" )
   REQUIRE( chunks.size() == 1 );
 
   checkSequence( chunks.front(), 3, 0 );
+  CHECK( chunks.front().contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+  CHECK( chunks.front().contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
 }
 
 TEST_CASE( "ChunkedJournal(1) load EOF" )
@@ -158,16 +180,40 @@ TEST_CASE( "ChunkedJournal(1) load EOF" )
   sut.seekToEof();
   const std::list<jess::Chunk>& chunks = sut.getChunks();
   REQUIRE( chunks.size() == 1 );
-  checkSequence( chunks.front(), 1, 9 );
+  const jess::Chunk& lastChunk = chunks.front();
+  checkSequence( lastChunk, 1, 9 );
+  CHECK( lastChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+  CHECK( lastChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
 
   SUBCASE( "seek to BOF" )
   {
     sut.seekToBof();
     REQUIRE( chunks.size() == 2 );
-    checkSequence( chunks.front(), 1, 0 );
+    const jess::Chunk& firstChunk = chunks.front();
+    checkSequence( firstChunk, 1, 0 );
+    CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+    CHECK( firstChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
+    CHECK( lastChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+    CHECK( lastChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
 
     SUBCASE( "load next line" )
     {
+      sut.seekLines( 1 );
+      REQUIRE( chunks.size() == 3 );
+      auto it = chunks.begin();
+      std::advance( it, 1 );
+      const jess::Chunk& secondChunk = *it;
+      REQUIRE( &secondChunk != &firstChunk );
+      REQUIRE( &secondChunk != &lastChunk );
+      checkSequence( secondChunk, 1, 1 );
+      CHECK( firstChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+      CHECK( firstChunk.contiguityEnd == jess::Contiguity::CONTIGUOUS );
+      CHECK( secondChunk.contiguityBeginning == jess::Contiguity::CONTIGUOUS );
+      CHECK( secondChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
+      CHECK( lastChunk.contiguityBeginning == jess::Contiguity::NON_CONTIGUOUS );
+      CHECK( lastChunk.contiguityEnd == jess::Contiguity::NON_CONTIGUOUS );
     }
   }
 }
+
+// todo: check skipping a chunk
